@@ -1,0 +1,191 @@
+# Copyright (c) 1995-2010 Sullivan Beck. All rights reserved.
+# This program is free software; you can redistribute it and/or modify it
+# under the same terms as Perl itself.
+
+=pod
+
+=head1 NAME
+
+Date::Manip::Lang - date manipulation routines (language initialization)
+
+=head1 DESCRIPTION
+
+This module is a series of routines, one per language, used to initialize
+the support for different languages in Date::Manip
+
+=head1 ADDING A LANGUAGE
+
+Adding a language is easily done.  If you want to add a language, refer to
+the list of words and phrases given below.  Translate them into the desired
+language and email them to me.
+
+Note that Date::Manip does support international character sets, so if
+there are non-ASCII characters in the words, it's not a problem.  Be sure
+to include an ASCII representation as well that can be used in cases where
+non-ASCII characters might cause problems.  In many cases, alternate
+spellings are allowed, and there may be multiple words or phrases which
+fit, so please include all of them (with ASCII representations for any
+that include non-ASCII characters).
+
+Please translate ALL of the following.  In some cases, a phrase is given
+in parentheses.  It is not necessary to translate the phrase.  They're
+there to show the word in the correct context.
+
+  month names (January February ...)
+  abbreviations (Jan Feb ...)
+
+  day name (Monday Tuesday ... Sunday)
+  abbreviation (Mon Tue ... Sun)
+  short abbrev. (M T ... S)
+
+  number suffix (1st 2nd ... 31st)
+  spelled out (first second ... thirty-first
+
+  now
+  today
+  tomorrow
+  yesterday
+
+  last (last day of the month)
+
+  each (each Tuesday of the month)
+
+  of (first day of the week)
+
+  at (at 3:00)
+
+  on (on Tuesday)
+
+  next (next Tuesday)
+
+  last (last Tuesday)
+
+  exactly (in exactly 3 hours)
+
+  approximately (in approximately 3 hours)
+
+  business (in 4 business days)
+
+
+
+  Some times of the day are named. At the very least, there is
+  probably noon and midnight. Provide all named times, and the
+  time of day.
+     noon      12:00:00
+     midnight  00:00:00
+
+  The delta field names can be written or abbreviated in many differet
+  ways. Provide all names and abbreviations for the seven fields. For
+  example:
+     years/year/yrs/yr/y
+     months/month/mon
+     weeks/week/wk/wks/w
+     days/day/d
+     hours/hour/hr/hrs
+     minutes/minute/min/mn
+     seconds/second/sec/s
+
+  What words/phrases can be used to say that a time is in the future? E.g.
+     IN 3 hours
+     3 hours LATER
+     3 hours IN THE FUTURE
+  In the past?
+     3 hours AGO
+     3 hours PAST
+
+  Does the language have an equivalent of the English AM/PM? If so,
+  what are all possible values of each?
+
+  Other than a comma or period, are there any common integer/decimal
+  separators? For example: 1.25 can be expressed as 1.25 or 1,25
+  commonly. Are there any other ways?
+
+  When expressing time the hours/minutes and minutes/seconds are
+  typically separated by colons. Are there any other separators?
+  If so, what combinations of the separators are used in real life?
+  For example: 05h30:00.
+    NOTE: there must be the same number of sephm and sepms values
+          and the first sephm corresponds to the first sepms, etc.
+
+=head1 AUTHOR
+
+Sullivan Beck (sbeck@cpan.org)
+
+You can always get the newest beta version of Date::Manip (which may fix
+problems in the current CPAN version... and may add others) from my home
+page:
+
+http://www.cise.ufl.edu/~sbeck/
+
+=cut
+
+# $hashref = _Date_Init_LANGUAGE;
+#   This returns a hash containing all of the initialization for a
+#   specific language.  The hash elements are:
+#
+#   @ month_name      full month names          January February ...
+#   @ month_abb       month abbreviations       Jan Feb ...
+#   @ day_name        day names                 Monday Tuesday ...
+#   @ day_abb         day abbreviations         Mon Tue ...
+#   @ day_char        day character abbrevs     M T ...
+#   @ am              AM notations
+#   @ pm              PM notations
+#
+#   @ num_suff        number with suffix        1st 2nd ...
+#   @ num_word        numbers spelled out       first second ...
+#
+#   $ now             words which mean now      now ...
+#   $ today           words which mean today    today ...
+#   $ last            words which mean last     last final ...
+#   $ each            words which mean each     each every ...
+#   $ of              of (as in a member of)    in of ...
+#                     ex.  4th day OF June
+#   $ at              at 4:00                   at
+#   $ on              on Sunday                 on
+#   $ future          in the future             in
+#   $ past            in the past               ago
+#   $ next            next item                 next
+#   $ prev            previous item             last previous
+#   $ later           2 hours later
+#
+#   % offset          a hash of special dates   { tomorrow->0:0:0:1:0:0:0 }
+#   % times           a hash of times           { noon->12:00:00 ... }
+#
+#   $ years           words for year            y yr year ...
+#   $ months          words for month
+#   $ weeks           words for week
+#   $ days            words for day
+#   $ hours           words for hour
+#   $ minutes         words for minute
+#   $ seconds         words for second
+#
+#   $ exact           exact mode                exactly
+#   $ approx          approximate mode          approximately
+#   $ business        business mode             business
+#
+#   r sephm           hour/minute separator     (?::)
+#   r sepms           minute/second separator   (?::)
+#   r sepss           second/fraction separator (?:[.:])
+#
+#   Elements marked with an asterix (@) are returned as a set of lists.
+#   Each list contains the strings for each element.  The first set is used
+#   when the 7-bit ASCII (US) character set is wanted.  The 2nd set is used
+#   when an international character set is available.  Both of the 1st two
+#   sets should be complete (but the 2nd list can be left empty to force the
+#   first set to be used always).  The 3rd set and later can be partial sets
+#   if desired.
+#
+#   Elements marked with a dollar ($) are returned as a simple list of words.
+#
+#   Elements marked with a percent (%) are returned as a hash list.
+#
+#   Elements marked with (r) are regular expression elements which must not
+#   create a back reference.
+#
+# ***NOTE*** Every hash element (unless otherwise noted) MUST be defined in
+# every language.
+
+
+# Explain the the first word should be ASCII, the second word the preferred
+# international character set version
+

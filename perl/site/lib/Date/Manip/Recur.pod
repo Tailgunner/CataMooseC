@@ -1,0 +1,1020 @@
+# Copyright (c) 1998-2010 Sullivan Beck. All rights reserved.
+# This program is free software; you can redistribute it and/or modify it
+# under the same terms as Perl itself.
+
+=pod
+
+=head1 NAME
+
+Date::Manip::Recur - methods for working with recurring events
+
+=head1 SYNOPSIS
+
+   use Date::Manip::Recur;
+   $date = new Date::Manip::Recur;
+
+=head1 DESCRIPTION
+
+This module contains functions useful in parsing and manipulating
+recurrences.  A recurrence is a notation for defining when a recurring
+event occurs.  For example, if an event occurs every other Friday or
+every 4 hours, this can be defined as a recurrence. A fully specified
+recurrence consists of the following pieces of information:
+
+=over 4
+
+=item B<Frequency>
+
+The most basic piece of information is a frequency which is the
+description of when the event occurs.
+
+Examples include:
+
+   the first of every month
+   every other day
+   the 4th Thursday of each month at 2:00 PM
+   every 2 hours and 30 minutes
+
+All of these can be expressed as a frequency.
+
+NOTE: When applying a frequency to get a list of dates on which a
+recurring event occurs, a delta is created from the frequency which is
+applied repeatedly to get all dates on which a recurring event occurs.
+The deltas will always be exact or approximate. There is no support
+for business mode recurrences. However, with the careful use of
+modifiers (discussed below), most recurring business events can be
+determined too.
+
+=item B<Range>
+
+In order to actually get a list of dates on which a recurring event
+occur, a start and end date are required for all but the most trivial
+recurrences.
+
+For example, if the frequency was
+
+   the first of every month
+
+and the start/end dates were Jan 1 2000 and May 31 2000, you could get
+the dates:
+
+   Jan 1 2000
+   Feb 1 2000
+   Mar 1 2000
+   Apr 1 2000
+   May 1 2000
+
+=item B<Base date>
+
+With most frequencies, it is necessary to have a base date (a date on
+which the recurring event occurred) in order to determine other dates
+when it will occur.
+
+A frequency like:
+
+   the first of every month
+
+does not require a base date, but a frequency like:
+
+   every other Friday
+
+does. Without a base date, it's impossible to determine whether any
+given Friday is one in which the event occurs, or one in which it does
+not occur.
+
+NOTE: For performance reasons, it is useful (but not required) for the
+base date to occur as close to the start of the range as
+possible. Placing the base date as the last date on which the event
+occurs on or before the start date is ideal. The further the base date
+is away from this date, the more intermediate calculations will need
+to be done.
+
+=item B<Modifier>
+
+Complex recurring events may require the use of modifiers in order to
+get them correct.
+
+For example, in America, many places treat Thanksgiving and the day
+after as holidays.
+
+Thanksgiving is easy to define using the frequency:
+
+   4th Thursday of every November
+
+but the day after is NOT possible to define only as a frequency.
+Depending on the year, the day after the 4th Thursday may be the 4th
+or 5th Friday.
+
+The day after Thanksgiving can be defined as the frequency and modifier:
+
+   4th Thursday of every November
+   +1 day
+
+Modifiers can also be used to create events that happen only on
+business days.
+
+=back
+
+With these pieces of information, the list of dates in the range can
+be obtained where the recurring event occurs.
+
+NOTE: both dates in the range and the base date (if necessary) must
+all be in the same time zone, and use the same Date::Manip::Base
+object.
+
+=head1 FREQUENCY NOTATION
+
+The syntax for specifying a frequency requires some explanation. It is
+very concise, but contains the flexibility to express every single
+type of recurring event I could think of.
+
+The syntax of the frequency description is a colon separated list of
+the format Y:M:W:D:H:MN:S (which stand for year, month, week, etc.).
+One (and only one) of the colons may optionally be replaced by an
+asterisk, or an asterisk may be prepended to the string.  For example,
+the following are all valid frequency descriptions:
+
+  1:2:3:4:5:6:7
+  1:2*3:4:5:6:7
+ *1:2:3:4:5:6:7
+
+But the following are NOT valid because they contain 2 or more
+asterisks:
+
+  1:2*3:4:5*6:7
+ *1:2:3:4:5:6*7
+
+When an asterisk is included, the portion to the left of it is called
+the interval, and refers to a time interval between recurring events.
+For example, if the interval of the frequency is:
+
+  1:2*
+
+it means that the recurring event occurs approximately every 1 year
+and 2 months.  The interval is approximate because elements to the right of
+the asterisk, as well as any modifiers included in the recurrence, will
+affect when the actual events occur.
+
+If no asterisks are included, then the entire recurrence is an interval.
+For example,
+
+  0:0:0:1:12:0:0
+
+refers to an event that occurs every 1 day, 12 hours.
+
+The portion of the frequency that occur after an asterisk is called
+the recurrence time (or rtime), and refers to a specific value (or
+values) for that type of time element (i.e. exactly as it would appear
+on a calendar or a clock).  For example, if the frequency ends with
+the rtime:
+
+  *12:0:0
+
+then the recurring event occurs at 12:00:00 (noon).
+
+For example:
+
+  0:0:0:2*12:30:0      every 2 days at 12:30 (each day)
+
+Elements in the rtime can be listed as single values, ranges (2
+numbers separated by a dash "-"), or a comma separated list of values
+or ranges.  In most cases, negative values are appropriate for the
+week or day values. -1 stands for the last possible value, -2 for the
+second to the last, etc.
+
+If multiple values are included in more than one field in the rtime,
+every possible combination will be used. For example, if the frequency
+ends with the rtime:
+
+  *12-13:0,30:0
+
+the event will occur at 12:00, 12:30, 13:00, and 13:30.
+
+Some examples are:
+
+  0:0:0:1*2,4,6:0:0    every day at at 02:00, 04:00, and 06:00
+  0:0:0:2*12-13:0,30:0 every other day at 12:00, 12:30, 13:00,
+                       and 13:30
+  0:1:0*-1:0:0:0       the last day of every month
+  *1990-1995:12:0:1:0:0:0
+                       Dec 1 in 1990 through 1995
+
+There is no way to express the following with a single recurrence:
+
+  every day at 12:30 and 1:00
+
+You have to use two recurrences to do this.
+
+You can include negative numbers in ranges. For example, including the
+range 2--2 in the day element means to go from the 2nd day to the 2nd
+to the last day. Currently, negative values are only defined in the
+week and day fields.
+
+When specifying a range, the first value must be less than the second
+or else nothing will be returned.
+
+When both the week and day elements are non-zero and the day is right
+of the asterisk, the day refers to the day of week. The following
+examples illustrate these type of frequencies:
+
+  0:1*4:2:0:0:0        4th Tuesday (day 2) of every month
+  0:1*-1:2:0:0:0       last Tuesday of every month
+  0:0:3*2:0:0:0        every 3rd Tuesday (every 3 weeks
+                       on 2nd day of week)
+  1:0*12:2:0:0:0       the 12th Tuesday of each year
+
+NOTE: The day of week refers to the numeric value of each day as
+specified by ISO 8601. In other words, day 1 is ALWAY Monday, day 7 is
+ALWAYS Sunday, etc., regardless of what day of the week the week is
+defined to begin on (using the FirstDay config variable). So when the
+day field refers to the day of week, it's value must be 1-7 (it cannot
+be a negative number), a range, or a comma separated list.
+
+When the week element is zero and the month element is non-zero and
+the day element is right of the asterisk, the day value is the day of
+the month (it can be from 1 to 31 or -1 to -31 counting from the end
+of the month).
+
+  3*1:0:2:12:0:0       every 3 years on Jan 2 at noon
+  0:1*0:2:12,14:0:0    2nd of every month at 12:00 and 14:00
+  0:1:0*-2:0:0:0       2nd to last day of every month
+
+NOTE: If the day given refers to the 29th, 30th, or 31st, in a month
+that does not have that number of days, it is ignored. For example, if
+you ask for the 31st of every month, it will return dates in Jan, Mar,
+May, Jul, etc.  Months with fewer than 31 days will be ignored.
+
+If both the month and week elements are zero, and the year element is
+non-zero, the day value is the day of the year (1 to 365 or 366 -- or
+the negative numbers to count backwards from the end of the year).
+
+  1:0:0*45:0:0:0       45th day of every year
+
+Specifying a day that doesn't occur in that year silently ignores that
+year. The only result of this is that specifying +366 or -366 will ignore
+all years except leap years.
+
+If the week element is non-zero and to the right of the asterisk, and
+the day element is zero, the frequency refers to the first day of the
+given week of the month or week of the year:
+
+  0:1*2:0:0:0:0        the first day of the 2nd week of
+                       every month
+  1:0*2:0:0:0:0        the first day of the 2nd week of
+                       every year
+
+A set of tables describing every possible combination of Y/M/W/D
+meanings, and giving an example of each is included below in the
+section LIST OF Y/M/W/D FREQUENCY DEFINITIONS.
+
+NOTE: If all fields left of the asterisk are zero, the last one is
+implied to be 1. In other words, the following are equivalent:
+
+   0:0:0*x:x:x:x
+   0:0:1*x:x:x:x
+
+and can be thought of as every possible occurence of the rtime.
+
+=head1 BASE DATES
+
+As mentioned above, base dates are not required for some types of
+recurrences.
+
+Any time a frequency refers to every single possible value as specified
+by the rtime, no base date is required.
+
+For example, the frequency:
+
+   0:0:1*1:12:0:0      every Monday at noon
+
+refers to every single "Monday at noon" (which is the value specified
+by the rtime).
+
+The frequency:
+
+   0:0:2*1:12:0:0      every other Monday at noon
+
+does not, so a base date is required.
+
+The general rule is that if an interval consists of zeros followed by a single
+one (i.e. 0:0:1), no base date is required.
+
+A recurrence of the form *Y:M:W:D:H:MN:S also does not use a base date.
+
+The base date is used to provide the bare minimum information. For example,
+the recurrence:
+
+   0:0:3*4:0:0:0       every 3 weeks on Thursday
+
+requires a base date to determine the week, but nothing else. Using the
+standard definition (Monday-Sunday) for a week, and given that one week in
+August 2009 is Aug 10 to Aug 16, any date in the range Aug 10 to Aug 16 will
+give the same results.
+
+Likewise, the recurrence:
+
+  1:3*0:4:0:0:0        every 1 year, 3 months on the 4th
+                       day of the month
+
+would only use the year and month of the base date, so all dates in a given
+month would give the same set of recurring dates.
+
+If a base date is specified for a recurrence which does not require it,
+it will be completely ignored.
+
+A default base date is not supplied when a recurrence is created.
+
+=head1 DATE RANGE
+
+The start and end dates form the range in which recurring events can fall
+into.
+
+Every recurring date will fall in the limit:
+
+   start <= date <= end
+
+When a recurrence is created, it may include a default range, and this is
+handled by the RecurRange config variable.
+
+=head1 OTHER FREQUENCY FORMATS
+
+There are a small handful of English strings (or the equivalent in
+other languages) which can be parsed in place of a numerical
+frequency.  These include:
+
+  every Tuesday in June [1997]
+  2nd Tuesday in June [1997]
+  last Tuesday in June [1997]
+
+  every Tuesday of every month [in 1997]
+  2nd Tuesday of every month [in 1997]
+  last Tuesday of every month [in 1997]
+
+  every day of every month [in 1997]
+  2nd day of every month [in 1997]
+  last day of every month [in 1997]
+
+  every day [in 1997]
+  every 2nd day [in 1977]
+  every 2 days [in 1977]
+
+Each of these set the frequency. If the year is include in the string,
+it also sets the dates in the range to be the first and last day of
+the year.
+
+In each of these, the numerical part (i.e. 2nd in all of the examples above)
+can be any number from 1 to 31. To make a frequency with a larger number than
+that, you have to use the standard format discussed above.
+
+=head1 MODIFIERS
+
+The following modifiers can be used (all of which are case insensitive).
+
+  PDn   : n is 1-7.  Means the previous day n not counting
+                     today
+  PTn   : n is 1-7.  Means the previous day n counting today
+  NDn   : n is 1-7.  Means the next day n not counting today
+  NTn   : n is 1-7.  Means the next day n counting today
+
+  FDn   : n is any number.  Means step forward n days.
+  BDn   : n is any number.  Means step backward n days.
+  FWn   : n is any number.  Means step forward n workdays.
+  BWn   : n is any number.  Means step backward n workdays.
+
+  CWD   : the closest work day (using the TomorrowFirst
+          config variable).
+  CWN   : the closest work day (looking forward first).
+  CWP   : the closest work day (looking backward first).
+
+          The CWD. CWM. amd CWP will always change the
+          date to the closest work day NOT counting
+          today.
+
+  NWD   : next work day counting today
+  PWD   : previous work day counting today
+  DWD   : closest work day (using the TomorrowFirst config
+          variable) counting today
+
+          The NWD, PWD, and DWD flags all leave the date
+          unchanged if it is a work day.
+
+  EASTER: select easter for this year.
+
+CWD, CWN, and CWP will usually return the same value, but if you are
+starting at the middle day of a 3-day weekend (for example), it will
+return either the first work day of the following week, or the last
+work day of the previous week depending on whether it looks forward or
+backward first.
+
+All business day modifiers ignored the time, so if a date is
+initially calculated at Saturday at noon, and the FW1 is applied,
+the date is initially moved to the following Monday (assuming it is
+a work day) and the FW1 moves it to Tuesday. The final result will
+be Tuesday at noon.
+
+There is a practical limitation on how the list of dates are
+calculated.
+
+When calculating a list of dates, the first thing is to use the
+interval to get a list if dates. The rtime and modifiers are then
+applied to this list, and the final list is compared to the start and
+end dates, and those dates within this range are returned.
+
+Because dates near the edge of the range may (based on the rtime and
+modifiers) move outside the range, and dates just outside the range
+may move into the range, dates outside the range have to be added to
+the initial list. As a result, when modifiers are present, the first
+thing to do is to expand the initial range to include all dates which
+will fall inside the actual range (as specified by the begin/end
+date).
+
+So, for example, if you have begin and end dates of Jan 10 and Jan 15,
+and a modifier of FD2 (forward 2 days), then the interval will be
+applied to dates in the range Jan 7 to Jan 14. This is obtained by
+applying the FD2 modifier to get Jan 8 to Jan 13 and then adding a 1
+day fudge factor on each side to account for any changes due to the
+mtime.
+
+The only problem is when applying business day modifiers. Moving
+forward 1 business day (with no holidays defined, and only using the
+standard weekend definition) may mean moving forward anywhere from 1
+to 3 days.  With holidays included, it could theoretically mean moving
+forward up to a year (i.e. if there were only 1 work day in the year,
+and all others were holidays).
+
+In real life, it won't ever get quite that bad, but it is not at all
+unheard of for companies to close for one or two weeks at a time. As
+a result, there is no way to know exactly how many days to adjust the
+range by to be guaranteed of getting all valid dates.
+
+A best guess is obtained by taking into account the length of the week
+and then applying a somewhat arbitrary fudge factor.
+
+For example, if the standard work week is 5 days on, 2 days off, and
+you move forward 2 business days, that could be anywhere from 2 to 5
+actual days. Finally a fudge factor is applied to make sure that the
+range includes all possible days.
+
+The default fudge factor is 5 days, so forward 2 business days would be
+treated as forward 2 to 10 actual days, which should be enough to get
+every possible date in real life.
+
+The fudge factor can be set to something other than 5 using the
+RecurNumFudgeDays config variable.  It it is set to be the total
+number of holidays in the year plus 1, it should always yield correct
+results, but at some expense.
+
+=head1 DETERMINING DATES
+
+In order to get a list of dates referred to by the recurrence, the
+following steps are taken.
+
+=over 4
+
+=item B<A list of dates is calculated>
+
+Based on the interval, the base date, and the range, a list of dates is
+calculated from the interval.
+
+The list of dates initially includes all dates that fall inside the range
+plus at least one before the range, and at least one after the range.
+This allows dates near the edge of the range which might be pushed
+across the edge when the rtime values are applied, or modifiers applied.
+
+NOTE: if the recurrence contains no interval (i.e. is of the form
+*Y:M:W:D:H:MN:S), no date list is determined. The dates come directly
+from the rtime values.
+
+=item B<The rtime values are applied>
+
+All rtime values are applied to the list. Any combination of rtime values
+which produce an invalid date are ignored.
+
+For example, if the rtime values refer to the '31st of each month', only
+any dates from the list which contain months with 31 days will be used.
+The others will be discarded.
+
+=item B<Modifiers applied>
+
+Next, all modifiers are applied.
+
+=item B<The range is tested>
+
+Finally, any dates that fall before or after the range are discarded.
+
+The resulting list of dates is returned.
+
+NOTE: when the recurrence contains no interval, it is not necessary
+to specify the range, and if it is not specified, all of the dates
+will be returned. The range MAY be specified to return only a subset
+of the dates if desired.
+
+=back
+
+=head1 HISTORY OF THE FREQUENCY NOTATION
+
+I realize that the frequency notation described above looks quite
+complicated at first glance, but it is (IMO) the best notation for
+expressing recurring events in existence. I actually consider it the
+single most important contribution to date/time handling in
+Date::Manip.
+
+When I first decided to add recurring events to Date::Manip, I first
+came up with a list of common ways of specifying recurring events, and
+then went looking for a notation that could be used to define them.
+
+After looking in several specifications (including ISO 8601) and after
+a discussion on a mailing list of calendar related topics, it appeared
+like there was no concise, flexible notation for handling recurring
+events that would handle all of the common forms I'd come up with.
+
+So, as a matter of necessity, I set about inventing my own
+notation. As I was looking at my list, it struck me that all of the
+parts which specified a frequency were higher level (i.e. referred to
+a larger unit of time) than those parts which specified a specific
+value (what I've called the rtime). In other words, when the terms
+were laid out from year down to seconds, the frequency part was always
+left of specific values.
+
+That led immediately to the notation described above, so I started analyzing
+it to figure out if it could express all of the recurring events I'd
+come up with. It succeeded on 100% of them. Not only that, but by playing
+with different values (especially different combinations of m/w/d values), I
+found that it would define recurring events that I hadn't even thought of,
+but which seemed perfectly reasonable in hindsight.
+
+After a very short period, I realized just how powerful this notation was,
+and set about implementing it, and as I said above, of all the contributions
+that Date::Manip has made, I consider this to be the most important.
+
+=head1 LIST OF Y/M/W/D FREQUENCY DEFINITIONS
+
+Because the week and day values may have multiple meanings depending
+on where the asterisk is, and which of the fields have non-zero values,
+a list of every possible combination is included here (though most can
+be determined using the rules above).
+
+When the asterisk occurs before the day element, and the day element
+is non-zero, the day element can take on multiple meanings depending
+on where the asterisk occurs, and which leading elements (year, month,
+week) have non-zero values. It can refer to the day of the week, day
+of the month, or day of the year.
+
+When the asterisk occurs before the week element, the week element of
+the frequency can also take on multiple meanings as well. When the month
+field and day fields are zero, it refers to the week of the year. Since
+the week of the year is well defined in the ISO 8601 spec, there is
+no ambiguity.
+
+When the month field is zero, but the day field is not, the week field
+refers to the nth occurrence of the day of week referred to by the
+day field in the year.
+
+When the month field is non-zero, the week field refers to the nth
+occurrence of the day of week in the month.
+
+In the tables below only the first 4 elements of the frequency are
+shown. The actual frequency will include the hour, minute, and second
+elements in addition to the ones shown.
+
+When all elements left of the asterisk are 0, the interval is such
+that it occurs the maximum times possible (without changing the type
+of elements to the right of the asterisk). Another way of looking at
+it is that the last 0 element of the interval is changed to 1. So, the
+interval:
+
+  0:0*3:0
+
+is equivalent to
+
+  0:1*3:0
+
+When the year field is zero, and is right of the asterisk, it
+means the current year.
+
+=over 4
+
+=item B<All elements left of the asterisk>
+
+When all of the month, week, and day elements are left of the
+asterisk, the simple definitions of the frequency are used:
+
+  frequency     meaning
+
+  1:2:3:4       every 1 year, 2 months, 3 weeks,
+                4 days
+
+Any, or all of the fields can be zero.
+
+=item B<Non-zero day, non-zero week>
+
+When both the day and week elements are non-zero, the day element
+always refers to the day of week. Values must be in the range (1 to 7)
+and no negative values are allowed.
+
+The following tables shows all possible variations of the frequency
+where this can happen (where day 4 = Thursday).
+
+When the week is left of the asterisk, the interval is used to get the
+weeks on the calendar containing a recurring date, and the day is used
+to set the day of the week.  The following are possible:
+
+  frequency     meaning
+
+  1:2:3*4       every 1 year, 2 months, 3 weeks
+                on Thur
+
+  1:0:3*4       every 1 year, 3 weeks on Thur
+
+  0:2:3*4       every 2 months, 3 weeks on Thur
+
+  0:0:3*4       every 3 weeks on Thur
+
+The base date is necessary for all frequencies (except 0:0:1*D) to get
+the starting week.
+
+When the week is right of the asterisk, and a non-zero month is left of the
+asterisk, the recurrence refers to a specific occurrence of a day-of-week
+during a month. The following are possible:
+
+  frequency     meaning
+
+  1:2*3:4       every 1 year, 2 months on the
+                3rd Thursday of the month
+
+  0:2*3:4       every 2 months on the 3rd Thur
+                of the month
+
+The base date is necessary for all of these (except 0:1*W:D) to get the
+starting month.
+
+When the week and month are both non-zero and right of the asterisk, the
+recurrence refers to an occurrence of day-of-week during the given month.
+Possibilities are:
+
+  frequency     meaning
+
+  1*2:3:4       every 1 year in February on
+	        the 3rd Thur
+
+  0*2:3:4       same as 1*2:3:4
+
+ *1:2:3:4       in Feb 0001 on the 3rd Thur
+                of the month
+
+ *0:2:3:4       on the 3rd Thur of Feb in the
+                current year
+
+The base date is necessary only for Y*M:W:D where Y>1.
+
+When the week is right of the asterisk, and the month is zero, the
+recurrence refers to an occurence of the day-of-week during the
+year. The following are possible:
+
+  frequency     meaning
+
+  1:0*3:4       every 1 year on the 3rd Thursday
+  1*0:3:4       of the year
+
+ *1:0:3:4       in 0001 on the 3rd Thur of
+                the year
+
+  0*0:3:4       same as 1*0:3:4
+
+ *0:0:3:4       on the 3rd Thur of the current
+                year
+
+The base date is only required for Y*0:W:D when Y>1 to get the starting
+year.
+
+There is one special case:
+
+  frequency     meaning
+
+  0:0*3:4       same as 0:1*3:4 (every month on
+                the 3rd Thur of the month)
+
+=item B<Non-zero day, non-zero month>
+
+When a non-zero day element occurs to the right of the asterisk and
+the week element is zero, but the month element is non-zero, the day
+elements always refers to a the day of month in the range (1 to 31)
+or (-1 to -31).
+
+The following table shows all possible variations of the frequency
+where this can happen:
+
+  frequency     meaning
+
+  1:2:0*4       every 1 year, 2 months on the
+  1:2*0:4       4th day of the month
+
+  1*2:0:4       every year on Feb 4th
+
+ *1:2:0:4       Feb 4th, 0001
+
+  0:2:0*4       every 2 months on the 4th day
+  0:2*0:4       of the month
+
+  0*2:0:4       same as 1*2:0:4
+
+ *0:2:0:4       Feb 4th of the current year
+
+The base date is required for all except 0:1*0:D, 1*M:0:D, and *Y:M:0:D
+and is used to get the year and month.
+
+=item B<Zero day, non-zero week>
+
+When a day is zero, and the week is non-zero, the recurrence refers
+to a specific occurrence of the first day of the week (as given by
+the FirstDay variable).
+
+The frequency can refer to an occurrence of FirstDay in a specific
+week (if the week is left of the asterisk):
+
+  frequency     meaning
+
+  1:2:3*0       every 1 year, 2 months, 3 weeks on
+                FirstDay
+
+  1:0:3*0       every 1 year, 3 weeks on FirstDay
+
+  0:2:3*0       every 2 months, 3 weeks on FirstDay
+
+  0:0:3*0       every 3 weeks on FirstDay
+
+or to a week in the year (if the week is right of the asterisk, and the
+month is zero):
+
+  frequency     meaning
+
+  1:0*3:0       every 1 year on the first day of the
+  1*0:3:0       3rd week of the year
+
+ *1:0:3:0       the first day of the 3rd week of 0001
+
+or to an occurrence of FirstDay in a month (if the week is right of the
+asterisk and month is non-zero):
+
+  frequency     meaning
+
+  1:2*3:0       every 1 year, 2 months on the 3rd
+                occurence of FirstDay
+
+  0:2*3:0       every 2 months on the 3rd occurence
+                of FirstDay
+
+  1*2:3:0       every year on the 3rd occurence
+                of FirstDay in Feb
+
+  0*2:3:0       same as 1*2:3:0
+
+ *1:2:3:0       the 3rd occurence of FirstDay
+                Feb 0001
+
+ *0:2:3:0       the 3rd occurence of FirstDay
+                in Feb of the current year
+
+NOTE: in the last group, a slightly more intuitive definition of these
+would have been to say that the week field refers to the week of the
+month, but given the ISO 8601 manner of defining when weeks start,
+this definition would have virtually no practical application. So the
+definition of the week field referring to the Nth occurence of
+FirstDay in a month was used instead.
+
+There are a few special cases here:
+
+  frequency     meaning
+
+  0:0*3:0       same as 0:1*3:0   (every month on the 3rd
+                occurence of the first day of week)
+
+  0*0:3:0       same as 1*0:3:0
+
+ *0:0:3:0       the first day of the 3rd week of the
+                current year
+
+=item B<Non-zero day>
+
+When a non-zero day element occurs and both the month and week
+elements are zero, the day elements always refers to a the day of year
+(1 to 366 or -1 to -366 to count from the end).
+
+The following table shows all possible variations of the frequency
+where this can happen:
+
+  frequency     meaning
+
+  1:0:0*4       every year on the 4th day of
+  1:0*0:4       the year
+  1*0:0:4
+
+ *1:0:0:4       the 4th day of 0001
+
+Other non-zero day variations have multiple meanings for the day
+element:
+
+  frequency     meaning
+
+  0:0:0*4       same as 0:0:1*4  (every week on Thur)
+
+  0:0*0:4       same as 0:1*0:4  (every month on the 4th)
+
+  0*0:0:4       same as 1*0:0:4
+
+ *0:0:0:4       the 4th day of the current year
+
+=item B<All other variations>
+
+The remaining variations have zero values for both week and day.
+They are:
+
+  frequency     meaning
+
+  1:2:0*0       every 1 year, 2 months on the first
+  1:2*0:0       day of the month
+
+  1*2:0:0       every year on Feb 1
+
+ *1:2:0:0       Feb 1, 0001
+
+  1:0:0*0       every 1 year on Jan 1
+  1:0*0:0
+  1*0:0:0
+
+ *1:0:0:0       Jan 1, 0001
+
+  0:2:0*0       every 2 months on the first day of
+  0:2*0:0       the month
+
+  0*2:0:0       same as 1*2:0:0
+
+ *0:2:0:0       Feb 1 of the current year
+
+  0:0:0*0       same as 0:0:1*0 (every week on
+                the first day of the week)
+
+  0:0*0:0       same as 0:1*0:0 (every month
+                on the 1st)
+
+  0*0:0:0       same as 1*0:0:0
+
+ *0:0:0:0       Jan 1 of the current year
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item B<new>
+
+=item B<new_config>
+
+=item B<new_date>
+
+=item B<new_delta>
+
+=item B<new_recur>
+
+=item B<base>
+
+=item B<tz>
+
+=item B<is_date>
+
+=item B<is_delta>
+
+=item B<is_recur>
+
+=item B<config>
+
+=item B<err>
+
+Please refer to the Date::Manip::Obj documentation for these methods.
+
+=item B<parse>
+
+   $err = $recur->parse($string [,$modifiers] [,$base,$start,$end]);
+
+This creates a new recurrence. A string containing a valid frequency
+is required. In addition, $start, $end, and $base dates can be passed
+in (either as Date::Manip::Date objects, or as strings containing dates
+that can be parsed), and any number of the modifiers listed above.
+
+If the $start or $end dates are not included, they may be supplied
+automatically, based on the value of the RecurRange variable. If any
+of the dates are passed in, they must be included in the order given
+(though it is safe to pass an empty string or undef in for any of them
+if you only want to set some, but not all of them).
+
+The $modifiers argument must either contain valid modifiers, or be
+left out of the argument list entirely. You cannot pass an empty string
+or undef in for it.
+
+   $err = $recur->parse($string);
+
+This creates a recurrence from a string which contains all of the
+necessary elements of the recurrence. The string is of the format:
+
+   FREQ*MODIFIERS*BASE*START*END
+
+where FREQ is a string containing a frequency, MODIFIERS is a string
+containing a comma separated list of modifiers, BASE, START, and END
+are strings containing parseable dates.
+
+All pieces are optional, but order must be maintained, so all of the
+following are valid:
+
+   FREQ*MODIFIERS
+   FREQ**BASE
+   FREQ**BASE*START*END
+
+=item B<frequency>
+
+=item B<start>
+
+=item B<end>
+
+=item B<base>
+
+=item B<modifiers>
+
+You can also create a recurrency in steps (or replace parts of an existing
+recurrence) using the following:
+
+   $err = $recur->frequency($frequency);
+
+   $err = $recur->start($start);
+   $err = $recur->end($end);
+
+   $err = $recur->base($base);
+
+   $err = $recur->modifiers($modifiers);
+   $err = $recur->modifiers(@modifiers);
+
+These set the appropriate part of the recurrence.
+
+Calling the frequency method discards all information currently
+stored in the Recur object (including an existing start, end, and
+base date), so this method should be called first.
+
+In the modifiers method, the modifiers can be passed in as a string
+containing a comma separated list of modifiers, or as a list of
+modifiers. The modifiers passed in override all previously set
+modifiers UNLESS the first one is the string "+", in which case the
+new modifiers are appended to the list.
+
+In the start, end, and base methods, the date passed in can be a
+Date::Manip::Date object, or a string that can be parsed to get a date.
+
+=item B<dates>
+
+   @dates = $recur->dates([$start,$end]);
+
+Returns the list of dates defined by the full recurrence. If there is
+an error, @dates will be empty, and the error flag will be set in the
+$recur object.
+
+$start and $end are either undef, or dates which can be used to limit
+the set of dates passed back.
+
+If the recurrence does not have a start and end date already, passing
+in $start and $end will set the range (but they will NOT be stored in
+the recurrence).
+
+If the recurrence does have a start and end date stored in it, the
+$start and $end arguments can be used to further limit the dates
+returned. In other words, if a recurrence has a start date of
+Jan 1, 2006 00:00:00 and and end date of Dec 31, 2006 23:59:59 stored
+in the recurrence, passing in $start of Jul 1, 2006 00:00:00 will
+limit the dates returned to the range of Jul 1 to Dec 31.
+
+Passing in a start date of Jul 1, 2007 will mean that no dates are
+returned since the recurrence limits the date to be in 2006.
+
+=back
+
+=head1 KNOWN BUGS
+
+None known.
+
+=head1 BUGS AND QUESTIONS
+
+Please refer to the Date::Manip::Problems documentation for
+information on submitting bug reports or questions to the author.
+
+=head1 SEE ALSO
+
+Date::Manip        - main module documentation
+
+=head1 LICENSE
+
+This script is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Sullivan Beck (sbeck@cpan.org)
+
+=cut

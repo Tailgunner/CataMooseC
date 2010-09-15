@@ -1,0 +1,86 @@
+# Copyright (c) 2010-2010 Sullivan Beck. All rights reserved.
+# This program is free software; you can redistribute it and/or modify it
+# under the same terms as Perl itself.
+
+=pod
+
+=head1 NAME
+
+Date::Manip::Status5 - status of Date::Manip 5.xx
+
+=head1 DESCRIPTION
+
+Date::Manip now exists in two versions. The 5.xx releases run on perl
+5.6/5.8, but have very limited support for time zones. The 6.xx releases
+require 5.10 but have complete support for time zones and have much
+greater functionality than the 5.xx releases.
+
+Because the cpan/cpanp tools automatically try to install the most
+recent version of a module, they would fail on systems running versions
+of perl prior to 5.10. To compensate for this, starting with the
+Date-Manip-6.10 distribution, the Date-Manip-6.xx distribution now
+includes both the current 5.xx and 6.xx releases, and the correct
+version of Date::Manip will be installed automatically. There will
+be no additional Date-Manip-5.xx distributions... you must get the
+Date-Manip-6.xx distribution for both versions of Date::Manip.
+
+I will continue to offer limited support for the 5.xx releases until
+December 2012. At that point, I will reevaluate things and decide
+what to do with the 5.xx releases. The most likely outcome is that I
+will continue to distribute the final 5.xx release, but will no longer
+do any maintenance on it. Alternately, I may choose to offer limited
+support for an additional year or more.
+
+Limited support for the 5.xx releases includes the following:
+
+=over 4
+
+=item Bug fixes
+
+As bugs are found, they will be fixed
+
+=item Time zone updates
+
+Timezone information for 5.xx is now automatically generated from the
+6.xx time zone list, and every time time zones are updated in 6.xx, the
+5.xx release will be similarly updated.
+
+=back
+
+I no longer offer the following support for the 5.xx releases:
+
+=over 5
+
+=item Added functionality
+
+No functionality will be added to 5.xx .
+
+=item Additional time zone requests
+
+Prior to the release of 6.00, time zones were added manually to Date::Manip
+upon request. Since time zone information in 5.xx is now automatically
+generated, I no longer take requests for time zones.
+
+=back
+
+Feel free to email me concerns and comments.
+
+=head1 BUGS AND QUESTIONS
+
+Please refer to the Date::Manip::Problems documentation for
+information on submitting bug reports or questions to the author.
+
+=head1 SEE ALSO
+
+Date::Manip        - main module documentation
+
+=head1 LICENSE
+
+This script is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Sullivan Beck (sbeck@cpan.org)
+
+=cut

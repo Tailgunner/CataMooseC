@@ -1,0 +1,13 @@
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Inheritable.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\AttrContainer.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\AttrContainer\Inheritable.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Class.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Map.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Method.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Method\MaybeWrapped.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Method\Wrapped.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Role.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Role\Application.pm
+C:\_strawberry\c\strawberry-perl-5.12.1.0-portable\perl\site\lib\MooseX\MethodAttributes\Role\Meta\Role\Application\Summation.pm

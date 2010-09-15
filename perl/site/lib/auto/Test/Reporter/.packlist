@@ -1,0 +1,9 @@
+C:\strawberry-perl-5.12.1.0-portable\perl\site\bin\cpantest
+C:\strawberry-perl-5.12.1.0-portable\perl\site\bin\cpantest.bat
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter.pm
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter\Transport.pm
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter\Transport\File.pm
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter\Transport\HTTPGateway.pm
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter\Transport\Mail\Send.pm
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter\Transport\Net\SMTP.pm
+C:\strawberry-perl-5.12.1.0-portable\perl\site\lib\Test\Reporter\Transport\Net\SMTP\TLS.pm

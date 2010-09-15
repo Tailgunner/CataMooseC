@@ -1,0 +1,262 @@
+# Copyright (c) 1995-2010 Sullivan Beck. All rights reserved.
+# This program is free software; you can redistribute it and/or modify it
+# under the same terms as Perl itself.
+
+=pod
+
+=head1 NAME
+
+Date::Manip::Changes5 - backward incompatible changes in Date::Manip 5.xx
+
+=head1 SYNOPSIS
+
+This describes all backwards incompatible changes made to the
+Date::Manip module in the 5.xx series of releases.
+
+=head1 DESCRIPTION
+
+For the most part, Date::Manip has remained backward compatible at
+every release, but occasionally, a change is made which is backward
+incompatible. These are documented here.  Major changes are marked
+with asterisks.
+
+=head1 VERSION 5.44
+
+=over 4
+
+=item B<(*) Recurrences revisited>
+
+The behavior of some elements of recurrences changed. These included
+making the week element (N) refer to the Nth occurrence of a day of the
+week in the week, month, or year. It is now possible to look at the
+3rd Friday of every month for example.
+
+=item B<Changed %x format in UnixDate>
+
+The %x format used to be equivalent to %D (%m/%d/%y), but it has
+been modified to use the DateFormat config variable, so it may return
+%d/%m/%y if a non-US DateFormat is specified.
+
+=back
+
+=head1 VERSION 5.41
+
+=over 4
+
+=item B<Changed path separator for VMS>
+
+Since ":" is used in some VMS paths, it should not have been used as
+the path separator.  It has been changed to a newline ("\n") character.
+
+=item B<Delta_Format behavior changed>
+
+The entire delta is exact if no month component is present (previously,
+no year or month component could be present).
+
+=back
+
+=head1 VERSION 5.38
+
+=over 4
+
+=item B<Removed Date_DaysSince999>
+
+The Date_DaysSince999 function (deprecated in 5.35) has been removed.
+
+=back
+
+=head1 VERSION 5.35
+
+=over 4
+
+=item B<Deprecated Date_DaysSince999>
+
+In fixing support for the years 0001-0999, I rewrote Date_DaysSince999 to
+be Date_DaysSince1BC.  The Date_DaysSince999 function will be removed.
+
+=item B<(*) Added PathSep variable>
+
+In order to better support Win32 platforms, I added the PathSep config
+variable.  This will allow the use of paths such as "c:\date" on Win32
+platforms.  Old config files on Win32 platforms (which were not working
+correctly in many cases) may not work if they contain path information to
+the personal config file.
+
+=back
+
+=head1 VERSION 5.34
+
+=over 4
+
+=item B<(*) All Date::Manip variables are no longer accessible>
+
+Previously, Date::Manip variables were declared using a full package name.
+Now, they are declared with the my() function.  This means that internal
+variables are no longer accessible outside of the module.
+
+=item B<Week interpretation in business mode deltas>
+
+A business mode delta containing a week value used to be treated as 7 days.
+A much more likely interpretation of a week is Monday to Monday, regardless
+of holidays, so this is now the behavior.
+
+=item B<%z UnixDate format>
+
+The %z UnixDate format used to return the time zone abbreviation.  It now
+returns it as a GMT offset (i.e. -0500).  %Z still returns the time zone
+abbreviation.
+
+=item B<Formats "22nd Sunday" returns the intuitive value>
+
+The date "22nd Sunday" used to return the Sunday of the 22nd week of the
+year (which could be the 21st, 22nd, or 23rd Sunday of the year depending
+on how weeks were defined).  Now, it returns the 22nd Sunday of the year
+regardless.
+
+=item B<Separator in DD/YYmmm and mmmDD/YY formats no longer optional>
+
+Previously, the date "Dec1065" would return Dec 10, 1965.  After adding
+the YYYYmmm and mmmYYYY formats, this was no longer possible.  The separator
+between DD and YY is no longer optional, so
+
+   Dec1065     returns December 1, 1065
+   Dec10/65    returns December 10, 1965
+
+=item B<(*) Date_Cmp added>
+
+This is not a backwards incompatibility... but is added to help prepare for
+a future incompatibility.  In one of the next versions of Date::Manip, the
+internal format of the date will change to include time zone information.
+All date comparisons should be made using Date_Cmp (which currently does
+nothing more than call the Perl "cmp" command, but which will important
+when comparing dates that include the time zone).
+
+=back
+
+=head1 VERSION 5.32
+
+=over 4
+
+=item B<Date_Init arguments>
+
+The old style Date_Init arguments that were deprecated in version 5.07
+have been removed.
+
+=item B<(*) DateManip.cnf change>
+
+Changed .DateManip.cnf to Manip.cnf (to get rid of problems on OS's
+that insist on 8.3 filenames) for all non-Unix platforms (Windows, VMS,
+Mac).  For all Unix platforms, it's still .DateManip.cnf .  It will only
+look in the user's home directory on VMS and Unix.
+
+=back
+
+=head1 VERSION 5.30
+
+=over 4
+
+=item B<(*) Delta format changed>
+
+A week field has been added to the internal format of the delta.  It now
+reads "Y:M:W:D:H:MN:S" instead of "Y:M:D:H:MN:S".
+
+=back
+
+=head1 VERSION 5.21
+
+=over 4
+
+=item B<Long running processes may give incorrect time zone>
+
+A process that runs during a time zone change (Daylight Saving Time
+specifically) may report the wrong time zone.  See the UpdateCurrTZ variable
+for more information.
+
+=item B<UnixDate "%J", "%W", and "%U" formats fixed>
+
+The %J, %W, and %U will no longer report a week 0 or a week 53 if it should
+really be week 1 of the following year.  They now report the correct week
+number according to ISO 8601.
+
+=back
+
+=head1 VERSION 5.20
+
+=over 4
+
+=item B<(*) ParseDate formats removed (ISO 8601 compatibility)>
+
+Full support for ISO 8601 formats was added.  As a result, some formats
+which previously worked may no longer be parsed since they conflict with an
+ISO 8601 format.  These include MM-DD-YY (conflicts with YY-MM-DD) and
+YYMMDD (conflicts with YYYYMM).  MM/DD/YY still works, so the first form
+can be kept easily by changing "-" to "/".  YYMMDD can be changed to
+YY-MM-DD before being parsed.  Whenever parsing dates using dashes as
+separators, they will be treated as ISO 8601 dates.  You can get around
+this by converting all dashes to slashes.
+
+=item B<(*) Week day numbering>
+
+The day numbering was changed from 0-6 (sun-sat) to 1-7 (mon-sun) to be
+ISO 8601 compatible.  Weeks start on Monday (though this can be overridden
+using the FirstDay config variable) and the 1st week of the year contains
+Jan 4 (though it can be forced to contain Jan 1 with the Jan1Week1 config
+variable).
+
+=back
+
+=head1 VERSION 5.07
+
+=over 4
+
+=item B<UnixDate "%s" format>
+
+Used to return the number of seconds since 1/1/1970 in the current
+time zone.  It now returns the number of seconds since 1/1/1970 GMT.
+The "%o" format was added which returns what "%s" previously did.
+
+=item B<(*) Internal format of delta>
+
+The format for the deltas returned by ParseDateDelta changed.  Previously,
+each element of a delta had a sign attached to it (+1:+2:+3:+4:+5:+6).  The
+new format removes all unnecessary signs by default (+1:2:3:4:5:6).  Also,
+because of the way deltas are normalized (see documentation on
+ParseDateDelta), at most two signs are included.  For backwards
+compatibility, the config variable DeltaSigns was added.  If set to 1, all
+deltas include all 6 signs.
+
+=item B<(*) Date_Init arguments>
+
+The format of the Date_Init calling arguments changed.  The
+old method
+
+  Date_Init($language,$format,$tz,$convtz);
+
+is still supported , but this support will likely disappear in the future.
+Use the new calling format instead:
+
+  Date_Init("var=val","var=val",...);
+
+NOTE:  The old format is no longer supported as of version 5.32 .
+
+=back
+
+=head1 BUGS AND QUESTIONS
+
+Please refer to the Date::Manip::Problems documentation for
+information on submitting bug reports or questions to the author.
+
+=head1 SEE ALSO
+
+Date::Manip        - main module documentation
+
+=head1 LICENSE
+
+This script is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Sullivan Beck (sbeck@cpan.org)
+
+=cut
