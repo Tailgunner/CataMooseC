@@ -1,3 +1,14 @@
+==============================================================
+                          THIS IS JUST 
+
+               Strawberry Perl 5.12.1.0 Portable
+
+              WITH A BUNCH  OF ADDITIONAL MODULES
+
+                     Original README below:
+==============================================================
+
+
 Strawberry Perl 5.12.1.0 Portable README
 ===============================
 
